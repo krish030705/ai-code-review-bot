@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 
 export default function Register() {
@@ -7,9 +8,10 @@ export default function Register() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (password !== confirm) {
       setError("Passwords don't match");
@@ -17,8 +19,14 @@ export default function Register() {
     }
     setError("");
     setLoading(true);
-    // Placeholder — Phase 6 wires this to POST /api/auth/register
-    setTimeout(() => navigate("/login"), 400);
+    try {
+      await register(email, password);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
