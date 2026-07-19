@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import Base, engine
 from app.models import models
-from app.api import auth  # noqa: E402
+from app.api import auth
+from app.api import projects
 
 app = FastAPI(title="AI Code Review Bot API")
 
@@ -18,6 +19,8 @@ app.add_middleware(
 
 # Registers all routes defined in auth.py under their /api/auth prefix
 app.include_router(auth.router)
+# Registers all routes defined in projects.py under their /api/projects prefix
+app.include_router(projects.router)
 
 @app.get("/")
 def read_root():
