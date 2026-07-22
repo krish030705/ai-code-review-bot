@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.database import get_db
-from app.models.models import User, Project
+from app.models.models import User, Project, Review
 from app.schemas.project import ProjectCreate, ProjectResponse
 from app.schemas.review import CodeSubmission
 from app.core.deps import get_current_user
+from app.services.claude_service import review_code
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -63,8 +64,28 @@ def submit_code(
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
+    try:
+        ai_result = review_code(submission.code, submission.language)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"AI review failed: {str(e)}",
+        )
+
+    new_review = Review(
+        project_id=project_id,
+        code_snapshot=submission.code,
+        language=submission.language,
+        ai_response=ai_result,
+        rating=ai_result.get("rating", ""),
+    )
+    db.add(new_review)
+    db.commit()
+    db.refresh(new_review)
+
     return {
-        "message": "Code received and validated successfully",
-        "language": submission.language,
-        "code_length": len(submission.code),
+        "id": new_review.id,
+        "language": new_review.language,
+        "ai_response": new_review.ai_response,
+        "created_at": new_review.created_at,
     }
