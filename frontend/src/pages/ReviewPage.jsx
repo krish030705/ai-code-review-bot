@@ -8,6 +8,32 @@ const EXTENSION_TO_LANGUAGE = {
 };
 const MAX_FILE_SIZE = 200 * 1024;
 
+function IssueList({ title, items, color }) {
+  if (!items || items.length === 0) return null;
+
+  const colorClasses = {
+    red: "border-red-400/20 bg-red-500/5 text-red-300",
+    amber: "border-amber-400/20 bg-amber-500/5 text-amber-300",
+    blue: "border-blue-400/20 bg-blue-500/5 text-blue-300",
+    purple: "border-purple-400/20 bg-purple-500/5 text-purple-300",
+    emerald: "border-emerald-400/20 bg-emerald-500/5 text-emerald-300",
+  };
+
+  return (
+    <div className={`border rounded-xl p-4 ${colorClasses[color]}`}>
+      <h3 className="text-sm font-medium mb-2">{title} ({items.length})</h3>
+      <ul className="space-y-1.5 text-sm text-slate-300">
+        {items.map((item, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="opacity-50">•</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function ReviewPage() {
   const { projectId } = useParams();
   const [code, setCode] = useState("");
@@ -47,6 +73,7 @@ export default function ReviewPage() {
     }
     setError("");
     setLoading(true);
+    setResult(null);
     try {
       const res = await submitCode(projectId, code, language);
       setResult(res);
@@ -99,9 +126,22 @@ export default function ReviewPage() {
       </div>
 
       {result && (
-        <div className="bg-emerald-500/10 border border-emerald-400/20 rounded-xl p-4 text-sm text-emerald-300">
-          {result.message} — {result.code_length} characters received as {result.language}.
-          <p className="text-slate-500 text-xs mt-1">Real AI analysis arrives in Phase 8/9.</p>
+        <div className="space-y-4">
+          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-white font-medium">Review Summary</h2>
+              <span className="text-xs bg-indigo-500/15 text-indigo-300 border border-indigo-400/20 px-2.5 py-1 rounded-full">
+                {result.ai_response.rating}
+              </span>
+            </div>
+            <p className="text-slate-400 text-sm">{result.ai_response.summary}</p>
+          </div>
+
+          <IssueList title="Bugs" items={result.ai_response.bugs} color="red" />
+          <IssueList title="Security Issues" items={result.ai_response.security} color="amber" />
+          <IssueList title="Performance" items={result.ai_response.performance} color="blue" />
+          <IssueList title="Clean Code" items={result.ai_response.cleanCode} color="purple" />
+          <IssueList title="Suggestions" items={result.ai_response.suggestions} color="emerald" />
         </div>
       )}
     </div>
